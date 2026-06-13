@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduBot — AI Study Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --card:     #1c2128;
+    --border:   #30363d;
+    --accent:   #f0883e;
+    --accent2:  #79c0ff;
+    --green:    #3fb950;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --user-bg:  #f0883e;
+    --bot-bg:   #1c2128;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    gap: 20px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--accent), #e36209);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(240,136,62,0.35);
+  }
+
+  .header-text h1 {
+    font-size: 20px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .header-text p {
+    font-size: 12px; color: var(--muted); margin-top: 1px;
+  }
+
+  .badge {
+    margin-left: auto;
+    background: rgba(63,185,80,0.12);
+    border: 1px solid rgba(63,185,80,0.3);
+    color: var(--green);
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── SDG TAG ── */
+  .sdg-tag {
+    width: 100%; max-width: 560px;
+    background: linear-gradient(135deg, rgba(240,136,62,0.08), rgba(121,192,255,0.05));
+    border: 1px solid rgba(240,136,62,0.2);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .sdg-tag span { color: var(--accent); font-weight: 600; }
+
+  /* ── CHAT WINDOW ── */
+  .chat-wrap {
+    width: 100%; max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+
+  .chat-window {
+    height: 420px;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex; flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-window::-webkit-scrollbar { width: 4px; }
+  .chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── MESSAGES ── */
+  .msg { display: flex; gap: 10px; animation: fadeUp 0.25s ease; }
+  .msg.user { flex-direction: row-reverse; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0; margin-top: 2px;
+  }
+
+  .bot .avatar  { background: linear-gradient(135deg, var(--accent), #e36209); }
+  .user .avatar { background: linear-gradient(135deg, var(--accent2), #388bfd); }
+
+  .bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13.5px; line-height: 1.6;
+  }
+
+  .bot  .bubble {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+
+  .user .bubble {
+    background: var(--user-bg);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .time {
+    font-size: 10px; color: var(--muted);
+    margin-top: 3px; padding: 0 2px;
+  }
+  .user .time { text-align: right; }
+
+  .quick-btns {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 8px;
+  }
+
+  .qbtn {
+    background: transparent;
+    border: 1px solid rgba(240,136,62,0.4);
+    color: var(--accent);
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; cursor: pointer;
+    font-family: inherit;
+    transition: all 0.18s;
+  }
+  .qbtn:hover { background: var(--accent); color: #fff; }
+
+  /* ── TYPING ── */
+  .typing { display: none; gap: 10px; }
+  .typing-dots {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 14px; border-bottom-left-radius: 4px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* ── CHIPS ── */
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 16px 6px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 11.5px; cursor: pointer;
+    font-family: inherit;
+    transition: all 0.18s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── INPUT ── */
+  .input-row {
+    display: flex; gap: 10px; align-items: center;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  #inp {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #inp:focus { border-color: var(--accent); }
+  #inp::placeholder { color: var(--muted); }
+
+  #send {
+    width: 40px; height: 40px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #e36209);
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+    box-shadow: 0 2px 8px rgba(240,136,62,0.4);
+  }
+  #send:hover { opacity: 0.85; }
+  #send svg { width: 18px; height: 18px; fill: white; }
+
+  /* ── FOOTER ── */
+  .footer {
+    width: 100%; max-width: 560px;
+    text-align: center;
+    font-size: 11px; color: var(--muted);
+    padding-bottom: 8px;
+  }
+  .footer span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">📚</div>
+  <div class="header-text">
+    <h1>EduBot</h1>
+    <p>Your AI Study Assistant</p>
+  </div>
+  <div class="badge">Online</div>
+</div>
+
+<!-- SDG Tag -->
+<div class="sdg-tag">
+  🌍 Built for <span>SDG 4 — Quality Education</span> &nbsp;·&nbsp; Helping students learn better, anytime.
+</div>
+
+<!-- Chat -->
+<div class="chat-wrap">
+
+  <div class="chat-window" id="chatWindow">
+
+    <!-- Welcome -->
+    <div class="msg bot">
+      <div class="avatar">📚</div>
+      <div>
+        <div class="bubble">
+          Hey! 👋 I'm <b>EduBot</b> — your personal AI study assistant.<br><br>
+          I can help you with study tips, subject explanations, exam prep, learning resources, and motivation when you need it. What do you want to work on today?
+          <div class="quick-btns">
+            <button class="qbtn" onclick="send('How do I study effectively?')">📖 Study tips</button>
+            <button class="qbtn" onclick="send('Help me with exam prep')">📝 Exam prep</button>
+            <button class="qbtn" onclick="send('I need motivation')">💪 Motivation</button>
+            <button class="qbtn" onclick="send('Explain a concept to me')">🧠 Explain something</button>
+          </div>
+        </div>
+        <div class="time" id="welcomeTime"></div>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="msg typing" id="typing">
+      <div class="avatar" style="background:linear-gradient(135deg,#f0883e,#e36209);">📚</div>
+      <div class="typing-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Suggestion chips -->
+  <div class="chips">
+    <button class="chip" onclick="send('Best way to memorize things')">🧠 Memorization</button>
+    <button class="chip" onclick="send('How to manage study time')">⏰ Time management</button>
+    <button class="chip" onclick="send('Free learning resources online')">🌐 Free resources</button>
+    <button class="chip" onclick="send('How to reduce exam stress')">😌 Exam stress</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-row">
+    <input id="inp" type="text" placeholder="Ask me anything about studying..." onkeydown="if(event.key==='Enter') sendMsg()" />
+    <button id="send" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  EduBot · AI project for <span>Lenovo LEAP 2026</span> · SDG 4 — Quality Education
+</div>
+
+<script>
+  // Set welcome time
+  document.getElementById('welcomeTime').textContent = getTime();
+
+  const KB = {
+    study: {
+      keys: ['study','learn','learning','how to study','effectively','tips','better study'],
+      reply: `Here are some study techniques that actually work 📖<br><br>
+<b>1. Active Recall</b> — Don't just re-read. Close the book and try to recall what you just read. It feels harder but it sticks way better.<br><br>
+<b>2. Spaced Repetition</b> — Review material after 1 day, then 3 days, then a week. Apps like Anki are great for this.<br><br>
+<b>3. Pomodoro Technique</b> — Study for 25 minutes, take a 5 minute break. Repeat. Your brain needs those breaks!<br><br>
+<b>4. Teach It</b> — If you can explain a concept simply, you actually understand it. Try explaining it out loud or to a friend.`,
+      quick: ['Pomodoro technique', 'Best study apps', 'How to focus better']
+    },
+    memory: {
+      keys: ['memorize','memorization','remember','memory','forget','retention'],
+      reply: `Struggling to remember things? Here's what actually helps 🧠<br><br>
+<b>Chunking</b> — Break info into small groups. Like memorizing a phone number as 3 parts, not 10 digits.<br><br>
+<b>Mnemonics</b> — Create a silly sentence using the first letters of what you need to remember.<br><br>
+<b>Mind Maps</b> — Draw connections between ideas. Visual learners swear by this.<br><br>
+<b>Sleep on it</b> — Seriously, studying just before sleep improves memory consolidation. Your brain processes it while you sleep!`,
+      quick: ['Best apps for flashcards', 'What is spaced repetition', 'Study tips']
+    },
+    exam: {
+      keys: ['exam','test','prepare','preparation','revision','revise','paper'],
+      reply: `Exam prep mode activated! 📝<br><br>
+<b>1 week before:</b> Make a topic list. Identify what you know vs what you don't. Focus on the weak spots first.<br><br>
+<b>3 days before:</b> Practice past papers. Don't just read answers — actually attempt questions.<br><br>
+<b>1 day before:</b> Light revision only. Don't cram new topics. Sleep early — seriously, sleep matters more than an extra hour of studying.<br><br>
+<b>Day of exam:</b> Eat properly, arrive early, read all questions before you start answering.`,
+      quick: ['How to reduce exam stress', 'How to write better answers', 'Time management during exams']
+    },
+    stress: {
+      keys: ['stress','anxious','anxiety','nervous','scared','worried','pressure','overwhelmed'],
+      reply: `It's completely okay to feel stressed — it means you care 💛<br><br>
+<b>First thing:</b> Take 5 deep breaths. Seriously, it works. It tells your nervous system to calm down.<br><br>
+<b>Break it down:</b> Don't look at everything at once. Just ask — what's the ONE thing I need to do right now?<br><br>
+<b>Talk to someone:</b> Tell a friend or family member how you're feeling. You don't have to figure it all out alone.<br><br>
+<b>Remember:</b> One exam does not define your life or your intelligence. Do your best and that's genuinely enough.`,
+      quick: ['Study tips', 'Motivation', 'Time management']
+    },
+    motivation: {
+      keys: ['motivat','demotivat','lazy','tired','give up','cant study','procrastinat','bored'],
+      reply: `Hey, you're here asking for help — that already means something 💪<br><br>
+<b>The 2-minute rule:</b> Tell yourself you'll just study for 2 minutes. Just open the book. Most of the time you'll keep going once you start.<br><br>
+<b>Visualize the outcome:</b> Picture yourself having done the work. Not in the exam — after. The relief of being prepared.<br><br>
+<b>Small wins count:</b> Done one page? That's progress. Don't dismiss small steps — they add up.<br><br>
+<b>Change location:</b> Sometimes just moving to a different spot (library, café, another room) can reset your brain.`,
+      quick: ['Study tips', 'How to focus better', 'Exam prep']
+    },
+    time: {
+      keys: ['time','schedule','manage','management','plan','planning','timetable','routine','balance'],
+      reply: `Time management is honestly a game-changer for students ⏰<br><br>
+<b>Plan the night before:</b> Before you sleep, list 3 things you must do tomorrow. Just 3 — not 20.<br><br>
+<b>Time blocking:</b> Assign specific hours to specific subjects. "9-11 AM is Maths. No exceptions."<br><br>
+<b>Prioritize by deadline + difficulty:</b> Do the hardest or most urgent thing first when your energy is highest.<br><br>
+<b>Protect your breaks:</b> Scheduled breaks are not laziness — they're part of your study plan. Stick to them.`,
+      quick: ['Pomodoro technique', 'Study routine', 'How to avoid distractions']
+    },
+    resources: {
+      keys: ['resources','free','website','app','platform','youtube','online','where to learn','material'],
+      reply: `Here are some genuinely great free learning resources 🌐<br><br>
+<b>Khan Academy</b> — Free courses on almost everything, explained super clearly. Great for Maths and Science.<br><br>
+<b>NPTEL</b> — Free lectures from IITs and IIMs. Perfect for engineering students.<br><br>
+<b>YouTube</b> — Channels like 3Blue1Brown (Math), Kurzgesagt (Science), CS Dojo (Programming).<br><br>
+<b>Coursera / edX</b> — Free to audit most courses. Pay only for the certificate if you need it.<br><br>
+<b>GeeksforGeeks</b> — If you're a CS student, this is your best friend for DSA and programming.`,
+      quick: ['Best apps for flashcards', 'Study tips for CS students', 'Free coding resources']
+    },
+    focus: {
+      keys: ['focus','distract','distraction','phone','concentration','concentrate','attention'],
+      reply: `Struggling to focus? You're not alone — our brains weren't built for hours of sitting still 🎯<br><br>
+<b>Phone in another room:</b> Not just face-down — another room. Out of sight = out of mind.<br><br>
+<b>Website blockers:</b> Try apps like Cold Turkey or Freedom to block Instagram/YouTube during study time.<br><br>
+<b>Background noise:</b> Some people focus better with lo-fi music or white noise. Try lofi.cafe or Noisli.<br><br>
+<b>Single-tasking:</b> One tab, one topic, one goal at a time. Multitasking is a myth — it just makes everything slower.`,
+      quick: ['Pomodoro technique', 'Study tips', 'Time management']
+    },
+    cs: {
+      keys: ['coding','programming','cs','computer science','dsa','algorithm','code','python','java','cpp'],
+      reply: `CS student asking for help? Say less 💻<br><br>
+<b>For DSA:</b> Start with Striver's A2Z DSA Sheet. Go topic by topic — don't random-hop between problems.<br><br>
+<b>For coding practice:</b> LeetCode for placement prep. HackerRank for beginners. CodeChef for competitive.<br><br>
+<b>For theory subjects:</b> NPTEL lectures + GeeksforGeeks for notes. Don't just mug up — understand the "why".<br><br>
+<b>Projects:</b> Build something real, however small. Even a simple CRUD app on your resume stands out more than 10 courses.`,
+      quick: ['Free coding resources', 'DSA tips', 'How to prepare for placements']
+    },
+    default: {
+      reply: `Hmm, I didn't quite get that one! 🤔<br><br>
+I can help you with:<br>
+• 📖 Study techniques and tips<br>
+• 📝 Exam preparation<br>
+• ⏰ Time management<br>
+• 💪 Motivation and focus<br>
+• 🌐 Free learning resources<br>
+• 💻 CS and coding specific help<br>
+• 😌 Managing exam stress<br><br>
+Try asking about any of those!`,
+      quick: ['Study tips', 'Exam prep', 'Motivation']
+    }
+  };
+
+  function getTime() {
+    return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function getReply(text) {
+    const t = text.toLowerCase();
+    for (const [k, v] of Object.entries(KB)) {
+      if (k === 'default') continue;
+      if (v.keys.some(kw => t.includes(kw))) return v;
+    }
+    return KB.default;
+  }
+
+  function addMsg(content, who) {
+    const win = document.getElementById('chatWindow');
+    const typing = document.getElementById('typing');
+    const div = document.createElement('div');
+    div.className = `msg ${who}`;
+
+    if (who === 'bot') {
+      div.innerHTML = `
+        <div class="avatar">📚</div>
+        <div>
+          <div class="bubble">${content.reply}
+            ${content.quick ? `<div class="quick-btns">${content.quick.map(q=>`<button class="qbtn" onclick="send('${q}')">${q}</button>`).join('')}</div>` : ''}
+          </div>
+          <div class="time">${getTime()}</div>
+        </div>`;
+    } else {
+      div.innerHTML = `
+        <div>
+          <div class="bubble">${content}</div>
+          <div class="time">${getTime()}</div>
+        </div>
+        <div class="avatar" style="background:linear-gradient(135deg,#79c0ff,#388bfd);">👤</div>`;
+    }
+
+    win.insertBefore(div, typing);
+    win.scrollTop = win.scrollHeight;
+  }
+
+  function sendMsg() {
+    const inp = document.getElementById('inp');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    send(text);
+  }
+
+  function send(text) {
+    addMsg(text, 'user');
+    const typing = document.getElementById('typing');
+    typing.style.display = 'flex';
+    document.getElementById('chatWindow').scrollTop = 99999;
+    setTimeout(() => {
+      typing.style.display = 'none';
+      addMsg(getReply(text), 'bot');
+    }, 900 + Math.random() * 600);
+  }
+</script>
+</body>
+</html>
